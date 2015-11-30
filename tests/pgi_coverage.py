@@ -19,20 +19,30 @@ from textwrap import dedent
 
 def test_pgi_coverage(gi_module, pgi_module):
     name_width = len(max(dir(gi_module), key=len))
-    print('%s %s' % (gi_module.__name__.rjust(name_width), pgi_module.__name__))
+    #print('%s %s' % (gi_module.__name__.rjust(name_width), pgi_module.__name__))
+    #print("%s\t%s" % ("field".rjust(name_width), "error"))
+    missing_count = 0
     for name in dir(gi_module):
         if name.startswith('_'):
             continue
-        status = 'OK'
+        status = ''
         try:
             getattr(pgi_module, name)
+            continue
         except NotImplementedError as e:
             #status = "FAIL: '%s'" % str(e.__class__.__name__)
-            status = "FAIL"
             for line in str(e).splitlines():
                 if line.startswith('NotImplementedError:'):
-                    status =  status + "    " + line
+                    status =  status + line
+        if not status:
+            continue
+        if missing_count == 0:
+            print("%s\t%s" % ("Field:".rjust(name_width), "Not Implemented(s):"))
+        missing_count += 1
         print("%s\t%s" % (name.rjust(name_width), status))
+
+    if missing_count == 0:
+        print("[OK] All methods available.")
     print("")
 
 def test_coverage(typelib):
@@ -58,6 +68,8 @@ def get_typelibs():
     return sorted(typelibs)
 
 if __name__=='__main__':
+    import gi.repository   # surface this error early
+    import pgi.repository  # surface this error early
     typelibs = get_typelibs()
     for typelib in typelibs:
         test_coverage(typelib)
